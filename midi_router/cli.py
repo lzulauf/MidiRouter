@@ -1,4 +1,5 @@
 import argparse
+import logging
 import sys
 
 import mido
@@ -6,6 +7,14 @@ import mido
 from midi_router.config import Config
 from midi_router.config_generator import generate_default_config
 from midi_router.midi_router import MidiRouter
+
+LOG_LEVELS = [
+    # logging.CRITICAL,
+    # logging.ERROR,
+    logging.WARNING,
+    logging.INFO,
+    logging.DEBUG,
+]
 
 
 class CommandLine:
@@ -41,6 +50,7 @@ def main(argv=None):
     """%(prog)s"""
     argv = argv or sys.argv[1:]
     parser = argparse.ArgumentParser(usage=CommandLine.__init__.__doc__)
+    parser.add_argument("--verbose", "-v", action="count", default=0)
     parser.set_defaults(cmd=None)
     subparsers = parser.add_subparsers()
 
@@ -56,6 +66,9 @@ def main(argv=None):
     generate_config_parser.add_argument('--config', '-c', metavar='FILE', type=argparse.FileType('w'), default='config.yaml', help='Config file to use [%(default)s]')
     
     args = parser.parse_args(argv)
+    print(args.verbose)
+    print(LOG_LEVELS[args.verbose])
+    logging.basicConfig(level=LOG_LEVELS[args.verbose])
     if args.cmd is None:
         parser.print_help()
 

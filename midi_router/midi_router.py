@@ -90,22 +90,23 @@ class MidiRouter:
             # print(f"{input_port=}")
             message = ''
             while True:
-                print(time.perf_counter())
+                #print(time.perf_counter())
                 message = input_port.receive(block=False)
                 if message is None:
                     break
-                print(f"{input_port.name}: {message}")
+                logger.info(f"{input_port.name}: {message}")
 
                 # TODO replace mappings with "compiled" mappings that contain (transformer, output_port(s))
                 for mapping in mappings:
                     if mapping.to_port == config.PortConstant.ALL: 
-                        print(f"to ALL: {message}")
+                        logger.info(f"to ALL: {message}")
                         for output_port in output_ports_by_long_name.values():
                             output_port.send(message)
                     else:
-                        print(f"to {mapping.to_port}: {message}")
-                        output_ports_by_long_name[identifiers_to_output_port_infos[mapping.to_port].long_name].send(message)
-                    
+                        output_port = output_ports_by_long_name[identifiers_to_output_port_infos[mapping.to_port.identifier].long_name]                    
+                        logger.info(f"to {output_port.name}: {message}")
+                        output_port.send(message)
+                        
         
         
     def run(self):
@@ -113,7 +114,11 @@ class MidiRouter:
         used_input_long_names, used_output_long_names = self._get_used_port_names(identifiers_to_input_port_infos, identifiers_to_output_port_infos)   
         input_ports_by_long_name = _open_input_ports(used_input_long_names)
         output_ports_by_long_name = _open_output_ports(used_output_long_names)
-        print(f"{input_ports_by_long_name=}")
+        
+        logger.debug(f"{identifiers_to_input_port_infos=}")
+        logger.debug(f"{input_ports_by_long_name=}")
+        logger.debug(f"{identifiers_to_output_port_infos=}")
+        logger.debug(f"{output_ports_by_long_name=}")
         mappings_by_input_port = {
             port: []
             for port in input_ports_by_long_name.values()
@@ -130,13 +135,14 @@ class MidiRouter:
         #    for port, mappings in mappings_by_input_port.items()
         #]
                 
-        print(mappings_by_input_port)
+        logger.debug(f"{mappings_by_input_port=}")
         import time
         try:
             start_time = time.perf_counter()
             cur_time = start_time
             loops = 0
-            while cur_time < start_time + 10:
+            #while cur_time < start_time + 10:
+            while True:
                 self._loop(mappings_by_input_port, output_ports_by_long_name, identifiers_to_output_port_infos)
                 cur_time = time.perf_counter()
                 loops += 1

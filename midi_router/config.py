@@ -45,6 +45,9 @@ class OutputPort(Port):
 class PortSpecifier(pydantic.BaseModel):
     identifier: pydantic.types.StrictStr
 
+    def __hash__(self):
+        return hash(self.identifier)
+
 
 class Mapping(pydantic.BaseModel):
     from_port: PortSpecifier | PortConstant = PortConstant.ALL
