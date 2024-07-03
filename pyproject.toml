@@ -1,0 +1,12 @@
+[project]
+name = "MidiRouter"
+version = "0.1.0alpha1"
+dependencies = [
+  "mido[ports-rtmidi]",
+  "pydantic",
+  "pyyaml",
+  "wonderwords",
+]
+
+[project.scripts]
+midi-router = "midi_router.cli:main"
