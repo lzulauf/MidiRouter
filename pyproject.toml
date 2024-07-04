@@ -8,5 +8,8 @@ dependencies = [
   "wonderwords",
 ]
 
+[tool.setuptools]
+packages = ["midi_router"]
+
 [project.scripts]
 midi-router = "midi_router.cli:main"
