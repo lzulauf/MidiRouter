@@ -1,0 +1,10 @@
+[Unit]
+Description=Midi Router
+After=multi-user.target
+
+[Service]
+Type=idle
+ExecStart=midi-router start > /home/pi/midi-router.log 2>&1
+
+[Install]
+WantedBy=multi-user.target
