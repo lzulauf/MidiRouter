@@ -66,8 +66,6 @@ def main(argv=None):
     generate_config_parser.add_argument('--config', '-c', metavar='FILE', type=argparse.FileType('w'), default='config.yaml', help='Config file to use [%(default)s]')
     
     args = parser.parse_args(argv)
-    print(args.verbose)
-    print(LOG_LEVELS[args.verbose])
     logging.basicConfig(level=LOG_LEVELS[args.verbose])
     if args.cmd is None:
         parser.print_help()
