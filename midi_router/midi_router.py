@@ -101,9 +101,8 @@ class MidiRouter:
                     if mapping.to_port == config.PortConstant.ALL: 
                         logger.info(f"to ALL: {message}")
                         for output_port in output_ports_by_long_name.values():
-                            if output_port.name == input_port.name:
-                                print(f"Not sending from {input_port.name} to {output_port.name}")
-                            else:
+                            # Don't send messages back to the originating device
+                            if output_port.name != input_port.name:
                                 output_port.send(message)
                     else:
                         output_port = output_ports_by_long_name[identifiers_to_output_port_infos[mapping.to_port.identifier].long_name]                    
@@ -143,13 +142,10 @@ class MidiRouter:
         try:
             start_time = time.perf_counter()
             cur_time = start_time
-            loops = 0
             #while cur_time < start_time + 10:
             while True:
                 self._loop(mappings_by_input_port, output_ports_by_long_name, identifiers_to_output_port_infos)
-                cur_time = time.perf_counter()
-                loops += 1
-            print(f"{loops=}")
+                time.sleep(0.01)
         finally:
             for port in itertools.chain(input_ports_by_long_name.values(), output_ports_by_long_name.values()):
                 port.close()
