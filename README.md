@@ -44,7 +44,7 @@ You can also set midi-router to run on startup. The following instructions assum
 
 ```bash
 $ sudo cp setup/midi-router.service /lib/systemd/system/midi-router.service
-$ sudo chmod 644 /lib/systemd/system/midi-router.
+$ sudo chmod 644 /lib/systemd/system/midi-router.service
 $ sudo systemctl daemon-reload
 $ sudo systemctl enable midi-router.service
 ```
