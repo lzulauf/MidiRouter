@@ -4,7 +4,7 @@ After=multi-user.target
 
 [Service]
 Type=idle
-ExecStart=/home/midi-router/midi-router-venv/bin/midi-router start -c /home/midi-router/config.yaml > /home/midi-router/midi-router.log 2>&1
+ExecStart=/home/midi-router/midi-router-venv/bin/midi-router start -c /home/midi-router/config.yaml
 
 [Install]
 WantedBy=multi-user.target
