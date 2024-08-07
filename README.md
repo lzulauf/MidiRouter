@@ -38,7 +38,7 @@ You can also set midi-router to run on startup. The following instructions assum
 
 > ❗️ Hardcoded paths
 >
-> The midi-router.service file contains hardcoded paths to the midi-router script (and logfile). You may need to update the paths on the ExecStart line.
+> The midi-router.service file contains hardcoded paths to the midi-router script (as well as config and log files). You may need to update the paths on the ExecStart line.
 >
 > You can determine the path to midi-router using `which midi-router`
 
