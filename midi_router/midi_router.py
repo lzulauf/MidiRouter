@@ -101,7 +101,10 @@ class MidiRouter:
                     if mapping.to_port == config.PortConstant.ALL: 
                         logger.info(f"to ALL: {message}")
                         for output_port in output_ports_by_long_name.values():
-                            output_port.send(message)
+                            if output_port.name == input_port.name:
+                                print(f"Not sending from {input_port.name} to {output_port.name}")
+                            else:
+                                output_port.send(message)
                     else:
                         output_port = output_ports_by_long_name[identifiers_to_output_port_infos[mapping.to_port.identifier].long_name]                    
                         logger.info(f"to {output_port.name}: {message}")
