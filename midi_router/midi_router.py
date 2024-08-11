@@ -64,15 +64,15 @@ class MidiRouter:
         }
         return identifiers_to_input_port_infos, identifiers_to_output_port_infos
 
-    def _get_used_port_names(self, identifiers_to_input_ports, identifiers_to_output_ports):
+    def _get_used_port_names(self, identifiers_to_input_port_infos, identifiers_to_output_port_infos):
         if any(
             mapping.from_port == config.PortConstant.ALL
             for mapping in self.config.mappings
         ):
-            used_input_long_names = set(mido.get_input_names())
+            used_input_long_names = set(port_info.long_name for port_info in identifiers_to_input_port_infos.values())
         else:
             used_input_long_names = {
-                identifiers_to_input_ports[mapping.from_port.identifier].long_name
+                identifiers_to_input_port_infos[mapping.from_port.identifier].long_name
                 for mapping in self.config.mappings
                 if isinstance(mapping.from_port, config.PortSpecifier)
             }
@@ -81,10 +81,10 @@ class MidiRouter:
             mapping.to_port == config.PortConstant.ALL
             for mapping in self.config.mappings
         ):
-            used_output_long_names = set(mido.get_output_names())
+            used_output_long_names = set(port_info.long_name for port_info in identifiers_to_output_port_infos.values())
         else:
             used_output_long_names = {
-                identifiers_to_output_ports[mapping.to_port.identifier].long_name
+                identifiers_to_output_port_infos[mapping.to_port.identifier].long_name
                 for mapping in self.config.mappings
                 if isinstance(mapping.to_port, config.PortSpecifier)
             }
@@ -94,7 +94,7 @@ class MidiRouter:
         input_port_name, message = self.incoming_message_queue.get()
         for mapping in mappings_by_input_port_name[input_port_name]:
             if mapping.to_port == config.PortConstant.ALL: 
-                logger.info(f"to ALL: {message}")
+                logger.info(f"from {input_port_name} to ALL: {message}")
                 for output_port in output_ports_by_long_name.values():
                     # Don't send messages back to the originating device
                     if output_port.name != input_port_name:
