@@ -13,6 +13,7 @@ except ImportError:
         """Dummy class to catch when rtmidi isn't available."""
 
 from midi_router import config
+from midi_router.mapper import Mapper
 
 
 logger = logging.getLogger("midi_router")
@@ -50,7 +51,8 @@ class MidiRouter:
 
     def _run(self):
         identifiers_to_input_port_infos, identifiers_to_output_port_infos = self._get_identifiers_to_port_infos()
-        used_input_long_names, used_output_long_names = self._get_used_port_names(identifiers_to_input_port_infos, identifiers_to_output_port_infos)   
+        used_input_long_names, used_output_long_names = self._get_used_port_names(
+            identifiers_to_input_port_infos, identifiers_to_output_port_infos)   
 
 
         input_ports_by_long_name = {}
@@ -62,7 +64,9 @@ class MidiRouter:
             for long_name in used_output_long_names:
                 output_ports_by_long_name[long_name] = self._open_output_port(long_name)
 
-            mappings_by_input_port_name = self._create_mappings_by_input_port_name(identifiers_to_input_port_infos, input_ports_by_long_name)
+            mappers_by_input_port_name = self._create_mappers_by_input_port_name(
+                identifiers_to_input_port_infos, input_ports_by_long_name,
+                identifiers_to_output_port_infos, output_ports_by_long_name)
             
             logger.debug(f"{identifiers_to_input_port_infos=}")
             logger.debug(f"{used_input_long_names=}")
@@ -70,20 +74,29 @@ class MidiRouter:
             logger.debug(f"{identifiers_to_output_port_infos=}")
             logger.debug(f"{used_output_long_names=}")
             logger.debug(f"{output_ports_by_long_name=}")
-            logger.debug(f"mappings_by_input_port_name={json.dumps({k:[v.dict() for v in value] for k, value in mappings_by_input_port_name.items()}, indent=2)}")
+            logger.debug(
+                "mappers_by_input_port_name=" + 
+                json.dumps(
+                    {
+                        k:[v.dict() for v in value] for k, value in mappers_by_input_port_name.items()
+                    },
+                    indent=2
+                ))
 
-            asyncio.run(self._run_async(mappings_by_input_port_name, output_ports_by_long_name, identifiers_to_output_port_infos))
+            asyncio.run(self._run_async(mappers_by_input_port_name, output_ports_by_long_name,
+                                        identifiers_to_output_port_infos))
+
         finally:
             for port in itertools.chain(input_ports_by_long_name.values(), output_ports_by_long_name.values()):
                 port.close()
 
-    async def _run_async(self, mappings_by_input_port_name, output_ports_by_long_name, identifiers_to_output_port_infos):
+    async def _run_async(self, mappers_by_input_port_name, output_ports_by_long_name, identifiers_to_output_port_infos):
         monitor_midi_device_change_task = asyncio.create_task(self._monitor_midi_device_changes())
-        process_message_queue_task = asyncio.create_task(self._process_message_queue(mappings_by_input_port_name, output_ports_by_long_name, identifiers_to_output_port_infos))
+        process_message_queue_task = asyncio.create_task(self._process_message_queue(mappers_by_input_port_name, output_ports_by_long_name, identifiers_to_output_port_infos))
         await monitor_midi_device_change_task
         await process_message_queue_task
 
-    async def _process_message_queue(self, mappings_by_input_port_name, output_ports_by_long_name, identifiers_to_output_port_infos):
+    async def _process_message_queue(self, mappers_by_input_port_name, output_ports_by_long_name, identifiers_to_output_port_infos):
         while True:
             try:
                 incoming_message = self.incoming_message_queue.get(timeout=EVENT_QUEUE_GET_TIMEOUT)
@@ -91,18 +104,12 @@ class MidiRouter:
                 pass
             else:
                 input_port_name, message = incoming_message
-                logger.info(f"from {input_port_name}: {message}")
-                for mapping in mappings_by_input_port_name[input_port_name]:
-                    if mapping.to_port == config.PortConstant.ALL: 
-                        logger.info(f"to ALL: {message}")
-                        for output_port in output_ports_by_long_name.values():
-                            # Don't send messages back to the originating device
-                            if output_port.name != input_port_name:
-                                output_port.send(message)
-                    else:
-                        output_port = output_ports_by_long_name[identifiers_to_output_port_infos[mapping.to_port.identifier].long_name]                    
-                        logger.info(f"  to {output_port.name}: {message}")
-                        output_port.send(message)
+                if hasattr(message, "channel"):
+                    logger.info(f"from {input_port_name}: {message}")
+                for mapper in mappers_by_input_port_name.get(input_port_name, []):
+                    mapper.send(input_port_name, message)
+                if hasattr(message, "channel"):
+                    logger.info("\n")
             await asyncio.sleep(0)  # Cooperative parallelism
 
     async def _monitor_midi_device_changes(self):
@@ -113,20 +120,30 @@ class MidiRouter:
                 raise MidiDeviceChangeException()
             await asyncio.sleep(MIDI_DEVICE_CHANGE_CHECK_SLEEP)  # Cooperative parallelism plus wait
 
-
-    def _create_mappings_by_input_port_name(self, identifiers_to_input_port_infos, input_ports_by_long_name):
-        mappings_by_input_port_name = {
+    def _create_mappers_by_input_port_name(self, identifiers_to_input_port_infos, input_ports_by_long_name,
+                                           identifiers_to_output_port_infos, output_ports_by_long_name):
+        mappers_by_input_port_name = {
             name: []
             for name in input_ports_by_long_name.keys()
         }
-        for mapping in self.config.mappings:
-            if mapping.from_port == config.PortConstant.ALL:
-                for mapping_list in mappings_by_input_port_name.values():
-                    mapping_list.append(mapping)
+        for mapping_config in self.config.mappings:
+            mapper = Mapper.from_mapping_config(
+                mapping_config,
+                identifiers_to_input_port_infos, input_ports_by_long_name,
+                identifiers_to_output_port_infos, output_ports_by_long_name,
+            )
+            if mapping_config.from_port == config.PortConstant.ALL:
+                for mapper_list in mappers_by_input_port_name.values():
+                    mapper_list.append(mapper)
             else:
-                mappings_by_input_port_name[identifiers_to_input_port_infos[mapping.from_port.identifier].long_name].append(mapping)
-        return mappings_by_input_port_name
-
+                mapper_list = mappers_by_input_port_name.get(
+                        identifiers_to_input_port_infos[mapping_config.from_port.identifier].long_name
+                )
+                # configs might reference disconnected devices, but mapper_lists only exist for connected
+                # devices.
+                if mapper_list:
+                    mapper_list.append(mapper)
+        return mappers_by_input_port_name
 
     def _create_receive_message_callback(self, input_port_name):
         def _receive_message_callback(message):
@@ -163,8 +180,8 @@ class MidiRouter:
         logger.debug(f"{available_output_names=}")
 
         if any(
-            mapping.from_port == config.PortConstant.ALL
-            for mapping in self.config.mappings
+            mapping_config.from_port == config.PortConstant.ALL
+            for mapping_config in self.config.mappings
         ):
             used_input_long_names = set(
                 port_info.long_name
@@ -173,17 +190,17 @@ class MidiRouter:
             )
         else:
             used_input_long_names = {
-                identifiers_to_input_port_infos[mapping.from_port.identifier].long_name
-                for mapping in self.config.mappings
+                identifiers_to_input_port_infos[mapping_config.from_port.identifier].long_name
+                for mapping_config in self.config.mappings
                 if (
-                    isinstance(mapping.from_port, config.PortSpecifier) and
-                    identifiers_to_input_port_infos[mapping.from_port.identifier].long_name in available_input_names
+                    isinstance(mapping_config.from_port, config.PortSpecifier) and
+                    identifiers_to_input_port_infos[mapping_config.from_port.identifier].long_name in available_input_names
                 )
             }
 
         if any(
-            mapping.to_port == config.PortConstant.ALL
-            for mapping in self.config.mappings
+            mapping_config.to_port == config.PortConstant.ALL
+            for mapping_config in self.config.mappings
         ):
             used_output_long_names = set(
                 port_info.long_name
@@ -192,11 +209,11 @@ class MidiRouter:
             )
         else:
             used_output_long_names = {
-                identifiers_to_output_port_infos[mapping.to_port.identifier].long_name
-                for mapping in self.config.mappings
+                identifiers_to_output_port_infos[mapping_config.to_port.identifier].long_name
+                for mapping_config in self.config.mappings
                 if (
-                    isinstance(mapping.to_port, config.PortSpecifier) and
-                    identifiers_to_output_port_infos[mapping.to_port.identifier].long_name in available_output_names
+                    isinstance(mapping_config.to_port, config.PortSpecifier) and
+                    identifiers_to_output_port_infos[mapping_config.to_port.identifier].long_name in available_output_names
                 )
             }
         return used_input_long_names, used_output_long_names
