@@ -1,6 +1,7 @@
 import asyncio
 import collections
 import itertools
+import json
 import logging
 import queue
 
@@ -51,6 +52,7 @@ class MidiRouter:
         identifiers_to_input_port_infos, identifiers_to_output_port_infos = self._get_identifiers_to_port_infos()
         used_input_long_names, used_output_long_names = self._get_used_port_names(identifiers_to_input_port_infos, identifiers_to_output_port_infos)   
 
+
         input_ports_by_long_name = {}
         output_ports_by_long_name = {}
         try:
@@ -62,6 +64,14 @@ class MidiRouter:
 
             mappings_by_input_port_name = self._create_mappings_by_input_port_name(identifiers_to_input_port_infos, input_ports_by_long_name)
             
+            logger.debug(f"{identifiers_to_input_port_infos=}")
+            logger.debug(f"{used_input_long_names=}")
+            logger.debug(f"{input_ports_by_long_name=}")
+            logger.debug(f"{identifiers_to_output_port_infos=}")
+            logger.debug(f"{used_output_long_names=}")
+            logger.debug(f"{output_ports_by_long_name=}")
+            logger.debug(f"mappings_by_input_port_name={json.dumps({k:[v.dict() for v in value] for k, value in mappings_by_input_port_name.items()}, indent=2)}")
+
             asyncio.run(self._run_async(mappings_by_input_port_name, output_ports_by_long_name, identifiers_to_output_port_infos))
         finally:
             for port in itertools.chain(input_ports_by_long_name.values(), output_ports_by_long_name.values()):
@@ -81,6 +91,7 @@ class MidiRouter:
                 pass
             else:
                 input_port_name, message = incoming_message
+                logger.info(f"from {input_port_name}: {message}")
                 for mapping in mappings_by_input_port_name[input_port_name]:
                     if mapping.to_port == config.PortConstant.ALL: 
                         logger.info(f"to ALL: {message}")
@@ -90,7 +101,7 @@ class MidiRouter:
                                 output_port.send(message)
                     else:
                         output_port = output_ports_by_long_name[identifiers_to_output_port_infos[mapping.to_port.identifier].long_name]                    
-                        logger.info(f"to {output_port.name}: {message}")
+                        logger.info(f"  to {output_port.name}: {message}")
                         output_port.send(message)
             await asyncio.sleep(0)  # Cooperative parallelism
 
@@ -147,6 +158,10 @@ class MidiRouter:
 
     def _get_used_port_names(self, identifiers_to_input_port_infos, identifiers_to_output_port_infos):
         available_input_names, available_output_names = mido.get_input_names(), mido.get_output_names()
+
+        logger.debug(f"{available_input_names=}")
+        logger.debug(f"{available_output_names=}")
+
         if any(
             mapping.from_port == config.PortConstant.ALL
             for mapping in self.config.mappings
