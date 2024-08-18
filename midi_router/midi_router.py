@@ -68,12 +68,12 @@ class MidiRouter:
                 identifiers_to_input_port_infos, input_ports_by_long_name,
                 identifiers_to_output_port_infos, output_ports_by_long_name)
             
-            logger.debug(f"{identifiers_to_input_port_infos=}")
-            logger.debug(f"{used_input_long_names=}")
-            logger.debug(f"{input_ports_by_long_name=}")
-            logger.debug(f"{identifiers_to_output_port_infos=}")
-            logger.debug(f"{used_output_long_names=}")
-            logger.debug(f"{output_ports_by_long_name=}")
+            logger.debug(f"identifiers_to_input_port_infos={json.dumps({k: v.model_dump(mode='json') for k, v in identifiers_to_input_port_infos.items()}, indent=2)}")
+            logger.debug(f"identifiers_to_output_port_infos={json.dumps({k: v.model_dump(mode='json') for k, v in identifiers_to_output_port_infos.items()}, indent=2)}")
+            logger.debug(f"used_input_long_names={json.dumps([name for name in used_input_long_names], indent=2)}")
+            logger.debug(f"used_output_long_names={json.dumps([name for name in used_output_long_names], indent=2)}")
+            logger.debug(f"input_ports_by_long_name={json.dumps({k: v.name for k, v in input_ports_by_long_name.items()}, indent=2)}")
+            logger.debug(f"output_ports_by_long_name={json.dumps({k: v.name for k, v in output_ports_by_long_name.items()}, indent=2)}")
             logger.debug(
                 "mappers_by_input_port_name=" + 
                 json.dumps(
@@ -136,12 +136,11 @@ class MidiRouter:
                 for mapper_list in mappers_by_input_port_name.values():
                     mapper_list.append(mapper)
             else:
-                mapper_list = mappers_by_input_port_name.get(
-                        identifiers_to_input_port_infos[mapping_config.from_port.identifier].long_name
-                )
+                long_name = identifiers_to_input_port_infos[mapping_config.from_port.identifier].long_name
+                mapper_list = mappers_by_input_port_name.get(long_name)
                 # configs might reference disconnected devices, but mapper_lists only exist for connected
                 # devices.
-                if mapper_list:
+                if mapper_list is not None:
                     mapper_list.append(mapper)
         return mappers_by_input_port_name
 

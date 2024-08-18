@@ -74,7 +74,7 @@ class Mapper:
 
 
     def dict(self):
-        if self.mapping_config:
+        if self.mapping_config is not None:
             return self.mapping_config.dict()
         return {
             "from_ports": [
