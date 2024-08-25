@@ -22,6 +22,7 @@ logger = logging.getLogger("midi_router")
 IncomingMessage = collections.namedtuple("IncomingMessage", ["input_port_name", "message"])
 
 
+
 class MidiDeviceChangeException(Exception):
     pass
 
@@ -34,6 +35,35 @@ class MidiDeviceChangeException(Exception):
 # frequently.
 EVENT_QUEUE_GET_TIMEOUT = 0.6
 MIDI_DEVICE_CHANGE_CHECK_SLEEP = 0.6
+
+
+class PortName:
+    def __init__(self, name, port=None):
+        self.name = name
+        self.port = port
+
+    @classmethod
+    def from_long_port_name(cls, long_name):
+        name, port = config.Port.parse_long_port_name(long_name)
+        return PortName(name, port)
+
+
+def get_available_input_names():
+    result = set()
+    for long_name in mido.get_input_names():
+        short_name = config.Port.parse_long_port_name(long_name)[0]
+        result.add(long_name)
+        result.add(short_name)
+    return result
+
+
+def get_available_output_names():
+    result = set()
+    for long_name in mido.get_output_names():
+        short_name = config.Port.parse_long_port_name(long_name)[0]
+        result.add(long_name)
+        result.add(short_name)
+    return result
 
 
 class MidiRouter:
@@ -173,7 +203,8 @@ class MidiRouter:
         return identifiers_to_input_port_infos, identifiers_to_output_port_infos
 
     def _get_used_port_names(self, identifiers_to_input_port_infos, identifiers_to_output_port_infos):
-        available_input_names, available_output_names = mido.get_input_names(), mido.get_output_names()
+        available_input_names = get_available_input_names()
+        available_output_names = get_available_output_names()
 
         logger.debug(f"{available_input_names=}")
         logger.debug(f"{available_output_names=}")

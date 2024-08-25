@@ -29,6 +29,7 @@ def port_identifiers_generator():
         yield generate_port_identifier(starting_letter=string.ascii_lowercase[index % len(string.ascii_lowercase)])
         index += 1
 
+
 def generate_default_config():
     port_generator = port_identifiers_generator()
     return config.Config(
@@ -36,7 +37,8 @@ def generate_default_config():
             inputs=[
                 config.InputPort(
                     identifier=f"in_{next(port_generator)}",
-                    long_name=long_name,
+                    name=config.Port.parse_long_port_name(long_name)[0],
+                    port=config.Port.parse_long_port_name(long_name)[1],
                     port_type=config.PortType.USB,
                 )
                 for long_name in mido.get_input_names()
@@ -44,7 +46,8 @@ def generate_default_config():
             outputs=[
                 config.InputPort(
                     identifier=f"out_{next(port_generator)}",
-                    long_name=long_name,
+                    name=config.Port.parse_long_port_name(long_name)[0],
+                    port=config.Port.parse_long_port_name(long_name)[1],
                     port_type=config.PortType.USB,
                 )
                 for long_name in mido.get_output_names()

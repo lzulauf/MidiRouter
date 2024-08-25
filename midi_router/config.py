@@ -2,14 +2,17 @@ from abc import ABC
 from collections import Counter
 from enum import Enum
 import itertools
+import re
 import string
-from typing import Literal
+from typing import Literal, Optional
 
 import pydantic
 import pydantic.types
 import pydantic_core
 import yaml
 
+
+port_long_name_re = re.compile(r"(?P<name>.*) (?P<port>\d+:\d+)")
 
 class PortType(Enum):
     USB = "USB"
@@ -24,7 +27,8 @@ class ChannelConstant(Enum):
 
 class Port(pydantic.BaseModel, ABC):
     identifier: pydantic.types.StrictStr
-    long_name: pydantic.types.StrictStr
+    name: pydantic.types.StrictStr
+    port: Optional[pydantic.types.StrictStr] = pydantic.Field(default=None, pattern=r"\d+:\d+")
     port_type: PortType
 
     @pydantic.field_validator("port_type")
@@ -33,6 +37,27 @@ class Port(pydantic.BaseModel, ABC):
         if v != PortType.USB:
             raise NotImplementedError("Only USB port types are supported at this time.")
         return v
+
+    @staticmethod
+    def parse_long_port_name(long_name):
+        re_match = port_long_name_re.match(long_name)
+        if re_match:
+            return re_match.group("name"), re_match.group("port")
+        else:
+            return long_name, None
+
+
+    @property
+    def long_name(self):
+        if self.port:
+            return f"{self.name} {self.port}"
+        else:
+            return self.name
+
+    @long_name.setter
+    def set_long_name(self, long_name):
+        self.name, self.port = self.parse_long_port_name(long_name)
+
 
 class InputPort(Port):
     pass
