@@ -147,6 +147,11 @@ You can then restart your system
 $ sudo reboot
 ```
 
+Logs can be viewed using journalctl
+```bash
+$ sudo journalctl -u midi-router.service
+```
+
 # Configuration
 Configuration is performed by listing a number of port specifies and giving a short identifier string to each one. These identifiers can then be used in the mappings section to determine how midi message are routed. Mappers can determine which devices route to which other devices, filtering by channels, and allow mapping channels on one device to different channels on another device.
 
