@@ -176,7 +176,7 @@ class MidiRouter:
             available_long_names = available_short_names_to_long_names.get(port_info.name, [])
             if port_info.long_name in available_long_names:
                 available_long_names.remove(port_info.long_name)
-                identifiers_to_port_names[port_info.identifier] = long_name
+                identifiers_to_port_names[port_info.identifier] = port_info.long_name
             else:
                 identifiers_to_port_names[port_info.identifier] = None
 
