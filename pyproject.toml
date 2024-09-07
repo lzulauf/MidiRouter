@@ -1,15 +1,28 @@
 [project]
 name = "MidiRouter"
-version = "0.1.0alpha1"
+version = "0.1.0.dev1"
 dependencies = [
-  "mido[ports-rtmidi]",
-  "pydantic",
-  "pyyaml",
-  "wonderwords",
+    "mido[ports-rtmidi]",
+    "pydantic",
+    "pyyaml",
+    "wonderwords",
 ]
+description = "Control routing of USB MIDI on a raspberry pi"
+authors = [
+    {name = "Luke Zulauf", email = "lzulauf@gmail.com"},
+]
+requires-python = ">=3.11"
+readme = "README.md"
 
 [tool.setuptools]
 packages = ["midi_router"]
 
+[tool.pdm]
+distribution = true
+
 [project.scripts]
 midi-router = "midi_router.cli:main"
+
+[build-system]
+requires = ["pdm-backend"]
+build-backend = "pdm.backend"

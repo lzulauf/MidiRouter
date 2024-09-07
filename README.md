@@ -241,3 +241,26 @@ mappings:
     from_channel: 10
     to_channel: 10
 ```
+
+# Development
+
+## Prereqs
+Install git and python
+```bash
+$ sudo apt-get install git python3
+```
+
+Install pdm
+```bash
+$ curl -sSL https://pdm-project.org/install-pdm.py | python3 -
+```
+
+## Download git repo
+```bash
+$ git clone https://github.com/lzulauf/MidiRouter
+```
+
+## Create virtual environment and install project development dependencies
+```bash
+$ cd MidiRouter && pdm sync
+```
