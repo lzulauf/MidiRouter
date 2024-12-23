@@ -41,6 +41,7 @@ class MidiRouter:
     def __init__(self, config):
         self.config = config
         self.incoming_message_queue = queue.Queue()
+        self._previous_identifiers_to_port_names = {}
 
     def run(self):
         # Every time the midi devices change, re-initialize
@@ -116,6 +117,9 @@ class MidiRouter:
             await asyncio.sleep(MIDI_DEVICE_CHANGE_CHECK_SLEEP)  # Cooperative parallelism plus wait
 
     def _create_mappers_by_input_port_name(self, input_ports_by_identifier, output_ports_by_identifier):
+        """
+        Generate mappers from input ports to output ports utilizing the mapper configuration.
+        """
         mappers_by_input_port_name = {
             port.name: []
             for port in input_ports_by_identifier.values()
@@ -168,7 +172,6 @@ class MidiRouter:
 
         logger.debug(f"available_long_names before assigning long-named identifiers: {available_short_names_to_long_names}")
 
-
         # 2. Assign all long_name specified port infos to their associated ports
         long_name_port_infos = [port_info for port_info in port_infos if port_info.port is not None]
         identifiers_to_port_names = {}
@@ -183,13 +186,26 @@ class MidiRouter:
         logger.debug(f"available_long_names after assigning long-named identifiers: {available_short_names_to_long_names}")
 
         # 3. Greedily assign remaining ports to short_name specified port infos
+        # Do this in the order of previously connected devices. This ensures
+        # that the most recently connected devices gets the lowest port_names.
+        #
+        # If items are initially assigned the wrong order, disconnecting and
+        # reconnecting the earliest item will cycle it to the end and shuffle
+        # devices up one.
         short_name_port_infos = [port_info for port_info in port_infos if port_info.port is None]
         for port_info in short_name_port_infos:
             available_long_names = available_short_names_to_long_names.get(port_info.name, [])
             if available_long_names:
-                long_name = available_long_names.pop()
+                previous_long_name = self._previous_identifiers_to_port_names.get(port_info.identifier)
+                if previous_long_name and previous_long_name in available_long_names:
+                    available_long_names.remove(previous_long_name)
+                    long_name = previous_long_name
+                else:
+                    long_name = available_long_names.pop()
                 identifiers_to_port_names[port_info.identifier] = long_name
             else:
                 identifiers_to_port_names[port_info.identifier] = None
+
+        self._previous_identifiers_to_port_names = dict(identifiers_to_port_names)
 
         return identifiers_to_port_names
