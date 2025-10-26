@@ -61,9 +61,10 @@ def main(argv=None):
     info_parser = subparsers.add_parser('info', help="Display midi info")
     info_parser.set_defaults(cmd='info')
     
-    generate_config_parser = subparsers.add_parser('generate-config', help='Generate example config file')
+    generate_config_parser = subparsers.add_parser('generate-config', help='Generate example config file.',
+                                                   description='Write a default configuration file.')
     generate_config_parser.set_defaults(cmd='generate-config')
-    generate_config_parser.add_argument('--config', '-c', metavar='FILE', type=argparse.FileType('w'), default='config.yaml', help='Config file to use [%(default)s]')
+    generate_config_parser.add_argument('--config', '-c', metavar='FILE', type=argparse.FileType('w'), default=sys.stdout, help='Config file to write. Defaults to stdout stream.')
     
     args = parser.parse_args(argv)
     logging.basicConfig(level=LOG_LEVELS[args.verbose])
