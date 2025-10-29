@@ -1,5 +1,6 @@
 import asyncio
 import collections
+from contextlib import contextmanager
 import itertools
 import json
 import logging
@@ -47,11 +48,22 @@ class MidiRouter:
         # Every time the midi devices change, re-initialize
         while True:
             try:
-                self._run()
+                with self._prepare_run() as mappers_by_input_port_name:
+                    asyncio.run(self._run_async(mappers_by_input_port_name))
             except MidiDeviceChangeException:
-                logger.warn("Midi Device Change Detected. Re-initializing")
+                logger.warning("Midi Device Change Detected. Re-initializing")
 
-    def _run(self):
+    async def async_run(self):
+        # Every time the midi devices change, re-initialize
+        while True:
+            try:
+                with self._prepare_run() as mappers_by_input_port_name:
+                    await self._run_async(mappers_by_input_port_name)
+            except MidiDeviceChangeException:
+                logger.warning("Midi Device Change Detected. Re-initializing")
+
+    @contextmanager
+    def _prepare_run(self):
         input_port_names_by_identifier = self._get_identifiers_to_port_names(mido.get_input_names(), self.config.ports.inputs)
         output_port_names_by_identifier = self._get_identifiers_to_port_names(mido.get_output_names(), self.config.ports.outputs)
 
@@ -80,7 +92,7 @@ class MidiRouter:
                     indent=2
                 ))
 
-            asyncio.run(self._run_async(mappers_by_input_port_name))
+            yield mappers_by_input_port_name
 
         finally:
             for port in itertools.chain(input_ports_by_identifier.values(), output_ports_by_identifier.values()):

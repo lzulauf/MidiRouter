@@ -1,0 +1,26 @@
+Header { }
+
+MainScreen {
+    layout: vertical;
+}
+
+Routes {
+    padding: 0;
+    border: solid red;
+    width: 50%;
+}
+
+RichLogConsole {
+    border: solid red;
+    height: 50%;
+}
+
+MappingEditor {
+}
+
+#midi-router-label {
+    color: green;
+    text-style: bold;
+}
+
+Footer { }

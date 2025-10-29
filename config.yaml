@@ -1,14 +1,17 @@
 ports:
   inputs:
-  - identifier: in_alleged_alarm
-    long_name: LoopBe Internal MIDI 0
+  - identifier: in_adamant_antigen
+    name: LoopBe Internal MIDI 0
+    port: null
     port_type: USB
   outputs:
-  - identifier: out_berserk_bite
-    long_name: Microsoft GS Wavetable Synth 0
+  - identifier: out_boiling_button
+    name: Microsoft GS Wavetable Synth 0
+    port: null
     port_type: USB
-  - identifier: out_clear_cloak
-    long_name: LoopBe Internal MIDI 1
+  - identifier: out_craven_cherry
+    name: LoopBe Internal MIDI 1
+    port: null
     port_type: USB
 mappings:
 - from_port: ALL

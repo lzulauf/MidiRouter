@@ -6,10 +6,25 @@ dependencies = [
   "pydantic",
   "pyyaml",
   "wonderwords",
+  "chordelia",
+  "textual>=6.4.0",
+  "rich",
 ]
 
+[project.scripts]
+midi-router-cli = "midi_router.scripts.cli:main"
+midi-router-interactive = "midi_router.scripts.interactive:main"
+
+
 [tool.setuptools]
+package-dir = {"" = "src"}
 packages = ["midi_router"]
 
-[project.scripts]
-midi-router = "midi_router.cli:main"
+[tool.uv]
+package = true
+
+[dependency-groups]
+dev = [
+    "ipython>=9.6.0",
+    "textual-dev>=1.8.0",
+]
