@@ -50,18 +50,22 @@ class Mapper:
         filter = None
         if mapping_config.from_channel != config.ChannelConstant.ALL:
             def _filter(message):
-                channel = getattr(message, "channel", None)
+                try:
+                    channel = message.channel
+                except Exception:
+                    channel = None
                 return channel is None or channel == mapping_config.from_channel
             filter = _filter
 
         transform = None
         if mapping_config.to_channel != config.ChannelConstant.ALL and mapping_config.to_channel != mapping_config.from_channel:
             def _transform(message):
-                return (
-                    message.copy(channel=mapping_config.to_channel)
-                    if hasattr(message, "channel")
-                    else message
-                )
+                try:
+                    _ = message.channel
+                except Exception:
+                    return message
+                else:
+                    return message.copy(channel=mapping_config.to_channel)
             transform = Transform(f"channel {mapping_config.from_channel} => channel {mapping_config.to_channel}", _transform)
 
         mapping = cls(from_ports=from_ports, to_ports=to_ports, filter=filter, transform=transform,
@@ -74,7 +78,11 @@ class Mapper:
             transformed = self.transform(message)
             for to_port in self.to_ports:
                 if to_port.name != from_port_name:
-                    if hasattr(message, "channel"):
+                    try:
+                        _ = message.channel
+                    except Exception:
+                        pass
+                    else:
                         logger.info(f"  to {to_port.name}: {transformed}")
                     to_port.send(transformed)
             #logger.info("\n")

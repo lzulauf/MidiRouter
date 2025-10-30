@@ -44,6 +44,12 @@ class CommandLine:
             self.write_default_config()
         elif self.args.cmd == 'start':
             self.start()
+        elif self.args.cmd == 'reload':
+            # Write a reload request file that a running router process can observe
+            path = self.args.reload_file
+            with open(path, 'w') as fh:
+                fh.write('reload')
+            print(f"Wrote reload request to {path}")
 
 
 def main(argv=None):
@@ -66,6 +72,10 @@ def main(argv=None):
     generate_config_parser.set_defaults(cmd='generate-config')
     generate_config_parser.add_argument('--config', '-c', metavar='FILE', type=argparse.FileType('w'), default=sys.stdout, help='Config file to write. Defaults to stdout stream.')
     
+    reload_parser = subparsers.add_parser('reload', help='Request a running router to reload its config')
+    reload_parser.set_defaults(cmd='reload')
+    reload_parser.add_argument('--file', dest='reload_file', default='midi_reload.request', help='Path to write the reload request file')
+
     args = parser.parse_args(argv)
     logging.basicConfig(level=LOG_LEVELS[args.verbose])
     if args.cmd is None:

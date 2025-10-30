@@ -14,7 +14,7 @@ ports:
     port: null
     port_type: USB
 mappings:
-- from_port: ALL
-  to_port: ALL
-  from_channel: ALL
-  to_channel: ALL
+- from_port:
+    identifier: in_adamant_antigen
+  to_port: 
+    identifier: out_boiling_button
