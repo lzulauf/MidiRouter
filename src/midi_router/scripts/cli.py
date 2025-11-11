@@ -28,7 +28,7 @@ class CommandLine:
         print("  " + "\n  ".join(mido.get_output_names()))
 
     def write_default_config(self):
-        print(f"Writing to {self.args.config.name}")
+        logging.info(f"Writing to {self.args.config.name}")
         generate_default_config().to_yaml(stream=self.args.config)
 
     def start(self):
